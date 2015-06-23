@@ -3,10 +3,10 @@
  *
  * Copyright © 2007-2008 Silicondust USA Inc. <www.silicondust.com>.
  *
- * This library is free software; you can redistribute it and/or 
+ * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,20 +14,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * As a special exception to the GNU Lesser General Public License,
- * you may link, statically or dynamically, an application with a
- * publicly distributed version of the Library to produce an
- * executable file containing portions of the Library, and
- * distribute that executable file under terms of your choice,
- * without any of the additional requirements listed in clause 4 of
- * the GNU Lesser General Public License.
- * 
- * By "a publicly distributed version of the Library", we mean
- * either the unmodified Library as distributed by Silicondust, or a
- * modified version of the Library that is distributed under the
- * conditions defined in the GNU Lesser General Public License.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "hdhomerun.h"
@@ -75,7 +63,7 @@ static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_eu_b
 
 /* EU cable channels. No common standard - use frequency in MHz for channel number. */
 static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_eu_cable[] = {
-	{ 50, 998,  50000000, 1000000},
+	{108, 862, 108000000, 1000000},
 	{  0,   0,         0,       0}
 };
 
@@ -87,6 +75,12 @@ static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_kr_c
 	{ 14,  22, 123000000, 6000000},
 	{ 23, 153, 219000000, 6000000},
 	{  0,   0,         0,       0}
+};
+
+/* JP antenna channels. */
+static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_jp_bcast[] = {
+	{ 13, 62, 473000000, 6000000},
+	{  0,  0,         0,       0}
 };
 
 /* US antenna channels. */
@@ -152,7 +146,8 @@ static const struct hdhomerun_channelmap_record_t hdhomerun_channelmap_table[] =
 	{"us-hrc",   hdhomerun_channelmap_range_us_hrc  , "us-cable us-hrc us-irc", NULL},
 	{"us-irc",   hdhomerun_channelmap_range_us_irc,   "us-cable us-hrc us-irc", NULL},
 
-	{NULL,       NULL,                                NULL,                     NULL}
+	{"jp-bcast", hdhomerun_channelmap_range_jp_bcast, "jp-bcast",               "JP" },
+	{ NULL, NULL, NULL, NULL }
 };
 
 const char *hdhomerun_channelmap_get_channelmap_from_country_source(const char *countrycode, const char *source, const char *supported)

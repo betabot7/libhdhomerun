@@ -3,10 +3,10 @@
  *
  * Copyright © 2006-2010 Silicondust USA Inc. <www.silicondust.com>.
  *
- * This library is free software; you can redistribute it and/or 
+ * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,66 +14,58 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * As a special exception to the GNU Lesser General Public License,
- * you may link, statically or dynamically, an application with a
- * publicly distributed version of the Library to produce an
- * executable file containing portions of the Library, and
- * distribute that executable file under terms of your choice,
- * without any of the additional requirements listed in clause 4 of
- * the GNU Lesser General Public License.
- * 
- * By "a publicly distributed version of the Library", we mean
- * either the unmodified Library as distributed by Silicondust, or a
- * modified version of the Library that is distributed under the
- * conditions defined in the GNU Lesser General Public License.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "hdhomerun_os.h"
 
+#if defined(__APPLE__)
+#include "mach/clock.h"
+#endif
+
+static pthread_once_t random_get32_once = PTHREAD_ONCE_INIT;
+static FILE *random_get32_fp = NULL;
+
+static void random_get32_init(void)
+{
+	random_get32_fp = fopen("/dev/urandom", "rb");
+}
+
 uint32_t random_get32(void)
 {
-	FILE *fp = fopen("/dev/urandom", "rb");
-	if (!fp) {
+	pthread_once(&random_get32_once, random_get32_init);
+
+	if (!random_get32_fp) {
 		return (uint32_t)getcurrenttime();
 	}
 
 	uint32_t Result;
-	if (fread(&Result, 4, 1, fp) != 1) {
-		Result = (uint32_t)getcurrenttime();
+	if (fread(&Result, 4, 1, random_get32_fp) != 1) {
+		return (uint32_t)getcurrenttime();
 	}
 
-	fclose(fp);
 	return Result;
 }
 
 uint64_t getcurrenttime(void)
 {
-	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	static uint64_t result = 0;
-	static uint64_t previous_time = 0;
-
-	pthread_mutex_lock(&lock);
-
 #if defined(CLOCK_MONOTONIC)
-	struct timespec tp;
-	clock_gettime(CLOCK_MONOTONIC, &tp);
-	uint64_t current_time = ((uint64_t)tp.tv_sec * 1000) + (tp.tv_nsec / 1000000);
+	struct timespec t;
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	return ((uint64_t)t.tv_sec * 1000) + (t.tv_nsec / 1000000);
+#elif defined(__APPLE__)
+	clock_serv_t clock_serv;
+	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &clock_serv);
+
+	struct mach_timespec t;
+	clock_get_time(clock_serv, &t);
+
+	mach_port_deallocate(mach_task_self(), clock_serv);
+	return ((uint64_t)t.tv_sec * 1000) + (t.tv_nsec / 1000000);
 #else
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	uint64_t current_time = ((uint64_t)t.tv_sec * 1000) + (t.tv_usec / 1000);
+#error no clock source for getcurrenttime()
 #endif
-
-	if (current_time > previous_time) {
-		result += current_time - previous_time;
-	}
-
-	previous_time = current_time;
-
-	pthread_mutex_unlock(&lock);
-	return result;
 }
 
 void msleep_approx(uint64_t ms)
